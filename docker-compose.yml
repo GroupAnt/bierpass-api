@@ -1,0 +1,24 @@
+version: '3.9'
+
+services:
+  bierpass-database:
+    container_name: bierpass-database
+    hostname: postgres
+    image: postgres:latest
+    ports:
+      - 5433:5432
+    command: postgres -c shared_preload_libraries=pg_stat_statements -c pg_stat_statements.track=all -c max_connections=200
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: bierpass-development
+    volumes:
+      - database:/var/lib/postgresql/data
+    healthcheck:
+      test: ['CMD-SHELL', 'pg_isready -U postgres']
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+volumes:
+  database:

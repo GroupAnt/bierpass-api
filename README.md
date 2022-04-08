@@ -1,4 +1,4 @@
-# simplebar-core
+# bierpass-api
 Sistema de Bar
 
 API de plataforma de compra e controle de vendas de tickets para a Hamburgada e controle de Bar.

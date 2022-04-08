@@ -1,6 +1,6 @@
 ## Description
 
-Bierpass-Api tem como objetivo principal resolver o bar interno do Arromba e seus eventos, afim de trazer comodidade para quem quer comprar seu lanche ou bebida sem sair da sua mesa.
+Bierpass-Api tem como objetivo principal resolver o bar interno do Arromba e seus eventos, afim de trazer comodidade para quem quer comprar seu lanche ou bebida sem sair de sua mesa.
 
 ## Installation
 

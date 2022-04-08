@@ -5,7 +5,7 @@ export class User extends BaseEntity {
   @PrimaryGeneratedColumn('uuid')
   id: string;
 
-  @Column({ nullable: false })
+  @Column({ nullable: false, unique: true })
   federalTaxId: string;
 
   @Column({ nullable: false })

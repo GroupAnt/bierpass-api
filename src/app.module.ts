@@ -1,10 +1,10 @@
-import { Module } from '@nestjs/common';
+import { MiddlewareConsumer, Module, NestModule } from '@nestjs/common';
 import { AppController } from './app.controller';
 import { AppService } from './app.service';
 import { UserModule } from './user/user.module';
 import { ConfigModule } from '@nestjs/config';
 import { TypeOrmModule } from '@nestjs/typeorm';
-
+import { ProductModule } from './product/product.module';
 
 @Module({
   imports: [
@@ -20,6 +20,7 @@ import { TypeOrmModule } from '@nestjs/typeorm';
       synchronize: (process.env.DB_SYNCHRONIZE === 'true'),
     }),
     UserModule,
+    ProductModule,
   ],
   controllers: [AppController],
   providers: [AppService],

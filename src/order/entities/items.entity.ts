@@ -15,7 +15,7 @@ export class Items extends BaseEntity {
   @PrimaryGeneratedColumn('uuid')
   readonly id: string;
 
-  @OneToOne(() => Product, product => product.id)
+  @ManyToOne(() => Product, product => product.id)
   @JoinColumn()
   product: Product;
 

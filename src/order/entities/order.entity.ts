@@ -25,7 +25,7 @@ export class Order extends CommonBaseEntity {
   @OneToMany(() => Items, items => items.order)
   items: Items[];
 
-  @Column()
+  @Column({ default: 0 })
   totalValue: number;
 
   @Column({ type: 'enum', enum: StatusEnumType, default: StatusEnumType.PENDING })

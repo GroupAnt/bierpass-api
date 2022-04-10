@@ -1,11 +1,11 @@
-import { Entity, PrimaryGeneratedColumn, Column } from "typeorm";
+import { Entity, PrimaryGeneratedColumn, Column, BaseEntity } from 'typeorm';
 
 @Entity()
-export class Product {
+export class Product extends BaseEntity {
   @PrimaryGeneratedColumn('uuid')
-  id: string;
+  readonly id: string;
 
-  @Column({ nullable: false })
+  @Column({ nullable: false, unique: true })
   name: string;
 
   @Column({ nullable: false })

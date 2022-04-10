@@ -1,17 +1,20 @@
 import { Request, Response, NextFunction } from 'express';
-import { Injectable, NestMiddleware, UnauthorizedException } from '@nestjs/common';
+import {
+  Injectable,
+  NestMiddleware,
+  UnauthorizedException,
+} from '@nestjs/common';
 import { UserService } from '../../user/user.service';
+import { User } from '../../user/entities/user.entity';
 
 interface RequestWithUser extends Request {
-  user: any;
+  user: User;
   acessToken: string;
 }
 
 @Injectable()
 export class AuthMiddleware implements NestMiddleware {
-  constructor(
-    private readonly userService: UserService
-  ) {}
+  constructor(private readonly userService: UserService) {}
 
   async use(req: RequestWithUser, res: Response, next: NextFunction) {
     const { token } = req.headers;

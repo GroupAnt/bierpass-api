@@ -24,7 +24,10 @@ export class ProductService {
     return this.repository.findOne(id);
   }
 
-  async update(id: string, updateProductDto: UpdateProductDto): Promise<Product> {
+  async update(
+    id: string,
+    updateProductDto: UpdateProductDto,
+  ): Promise<Product> {
     const product = await this.repository.preload({ id, ...updateProductDto });
 
     if (!product) throw new NotFoundException(`Produto não encontrado`);

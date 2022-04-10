@@ -1,9 +1,16 @@
-import { BaseEntity, Entity, PrimaryGeneratedColumn, Column } from "typeorm";
+import {
+  BaseEntity,
+  Entity,
+  PrimaryGeneratedColumn,
+  Column,
+  OneToMany,
+} from 'typeorm';
+import { Order } from 'src/order/entities/order.entity';
 
 @Entity()
 export class User extends BaseEntity {
   @PrimaryGeneratedColumn('uuid')
-  id: string;
+  readonly id: string;
 
   @Column({ nullable: false, unique: true })
   federalTaxId: string;
@@ -35,9 +42,12 @@ export class User extends BaseEntity {
   @Column({ nullable: false })
   postalCode: string;
 
-  @Column({ default: 'Blumenau'})
+  @Column({ default: 'Blumenau' })
   city: string;
 
   @Column({ default: 'SC' })
   country: string;
+
+  @OneToMany(() => Order, (order) => order.user)
+  orders: Order[];
 }

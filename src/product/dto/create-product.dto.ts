@@ -1,7 +1,7 @@
-import { IsNumberString, IsInt, Min } from 'class-validator';
+import { Min } from 'class-validator';
 
 export class CreateProductDto {
   name: string;
   @Min(1) price: number;
-  minQuantity: number;
+  @Min(1) minQuantity: number;
 }

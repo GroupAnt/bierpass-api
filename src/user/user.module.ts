@@ -8,12 +8,10 @@ import { AuthMiddleware } from '../common/middleware/auth.middleware';
 @Module({
   imports: [TypeOrmModule.forFeature([User])],
   controllers: [UserController],
-  providers: [UserService]
+  providers: [UserService],
 })
 export class UserModule implements NestModule {
   configure(consumer: MiddlewareConsumer) {
-    consumer
-      .apply(AuthMiddleware)
-      .forRoutes('product');
+    consumer.apply(AuthMiddleware).forRoutes('product', 'order');
   }
 }

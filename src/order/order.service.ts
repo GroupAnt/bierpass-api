@@ -1,9 +1,9 @@
-import { Injectable, BadRequestException } from '@nestjs/common';
+import { Injectable } from '@nestjs/common';
 import { CreateOrderDto } from './dto/create-order.dto';
 import { UpdateOrderDto } from './dto/update-order.dto';
 import { User } from '../user/entities/user.entity';
 import { InjectRepository } from '@nestjs/typeorm';
-import { In, Repository } from 'typeorm';
+import { Repository } from 'typeorm';
 import { Order } from './entities/order.entity';
 import { Items } from './entities/items.entity';
 import { Product } from 'src/product/entities/product.entity';
@@ -24,6 +24,7 @@ export class OrderService {
       const product = await this.productRepository.findOne({ id: item.id });
       if (product) {
         const price = product.price / 100;
+
         totalValue += (price * item.quantity);
 
         const createOrderItem = this.itemsRepository.create({

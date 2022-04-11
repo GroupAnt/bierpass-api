@@ -1,7 +1,9 @@
-import { Entity, PrimaryGeneratedColumn, Column, BaseEntity } from 'typeorm';
+import { CommonBaseEntity } from 'src/common/entities/base.entity';
+import { Entity, PrimaryGeneratedColumn, Column } from 'typeorm';
+
 
 @Entity()
-export class Product extends BaseEntity {
+export class Product extends CommonBaseEntity {
   @PrimaryGeneratedColumn('uuid')
   readonly id: string;
 

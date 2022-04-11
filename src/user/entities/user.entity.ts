@@ -6,9 +6,10 @@ import {
   OneToMany,
 } from 'typeorm';
 import { Order } from 'src/order/entities/order.entity';
+import { CommonBaseEntity } from 'src/common/entities/base.entity';
 
 @Entity()
-export class User extends BaseEntity {
+export class User extends CommonBaseEntity {
   @PrimaryGeneratedColumn('uuid')
   readonly id: string;
 

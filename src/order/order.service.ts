@@ -60,7 +60,9 @@ export class OrderService {
 
     if (!orders.length) throw new NotFoundException();
 
-    return orders.map(order => order.totalValue = order.totalValue / 100);
+    orders.forEach(order => order.totalValue = order.totalValue / 100);
+
+    return orders;
   }
 
   async findOne(user: User, id: string) {
@@ -100,7 +102,9 @@ export class OrderService {
       const saved = items.find(i => i.product?.id === item.id);
       if (!saved) throw new NotFoundException({ message: `Item ${item.id} not found` });
 
-      saved.quantity -= item.quantity || -1;
+      saved.quantity -= item.quantity || 1;
+
+      console.log({ saved, item });
 
       if (saved.quantity < 0) {
         throw new BadRequestException({ message: `Item ${item.id} already received` });
@@ -111,7 +115,7 @@ export class OrderService {
       await this.itemsRepository.save(createOrderItem);
     }
 
-    const updatedOrder = await this.orderRepository.findOne({ ...orderWhere, relations: ['items'] });
+    const updatedOrder = await this.orderRepository.findOne(id, { relations: ['items'] });
 
     updatedOrder.totalValue = updatedOrder.totalValue / 100;
 

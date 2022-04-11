@@ -1,4 +1,4 @@
-import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
+import { BadRequestException, ForbiddenException, Injectable, NotFoundException } from '@nestjs/common';
 import { CreateOrderDto } from './dto/create-order.dto';
 import { UpdateOrderDto } from './dto/update-order.dto';
 import { User } from '../user/entities/user.entity';
@@ -31,7 +31,7 @@ export class OrderService {
 
       totalValue += price * item.quantity;
 
-      const createOrderItem = this.itemsRepository.create({ ...product, quantity: item.quantity });
+      const createOrderItem = this.itemsRepository.create({ product, quantity: item.quantity });
       const orderItem = await this.itemsRepository.save(createOrderItem);
 
       products.push(orderItem);
@@ -43,7 +43,11 @@ export class OrderService {
       totalValue: totalValue * 100
     });
 
-    return this.orderRepository.save(order);
+    await this.orderRepository.save(order);
+
+    order.totalValue = order.totalValue / 100;
+
+    return order;
   }
 
   async findAll(userId: string) {
@@ -76,12 +80,16 @@ export class OrderService {
   }
 
   async update(user: User, id: string, updateOrderDto: UpdateOrderDto) {
-    const orderWhere = { where: { id, user } };
+    if (!user.hasAdmin) {
+      throw new ForbiddenException('You are not allowed to update orders');
+    }
+
+    const orderWhere = { where: { id } };
     const order = await this.orderRepository.findOne(orderWhere);
 
     if (!order) throw new NotFoundException({ message: 'Order not found' });
 
-    const itemWhere = { where: { order: { id } } };
+    const itemWhere = { where: { order: { id } }, relations: ['product'] };
     const items = await this.itemsRepository.find(itemWhere);
 
     for (const item of updateOrderDto.items) {
@@ -89,7 +97,7 @@ export class OrderService {
         throw new BadRequestException({ message: 'Quantity must be greater than 0' });
       }
 
-      const saved = items.find(i => i.id === item.id);
+      const saved = items.find(i => i.product?.id === item.id);
       if (!saved) throw new NotFoundException({ message: `Item ${item.id} not found` });
 
       saved.quantity -= item.quantity || -1;

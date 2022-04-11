@@ -2,16 +2,15 @@ import {
   Entity,
   Column,
   JoinColumn,
-  OneToOne,
   PrimaryGeneratedColumn,
   ManyToOne,
-  BaseEntity
 } from 'typeorm';
 import { Product } from '../../product/entities/product.entity';
 import { Order } from './order.entity';
+import { CommonBaseEntity } from 'src/common/entities/base.entity';
 
 @Entity()
-export class Items extends BaseEntity {
+export class Items extends CommonBaseEntity {
   @PrimaryGeneratedColumn('uuid')
   readonly id: string;
 

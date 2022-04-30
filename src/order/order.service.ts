@@ -16,6 +16,18 @@ export class OrderService {
     @InjectRepository(Product) private readonly productRepository: Repository<Product>
   ) { }
 
+  normalizeOrderPrice(order: Order) {
+    order.totalValue = order.totalValue / 100;
+
+    order.items.forEach(item => {
+      if (item.product?.price) {
+        item.product.price = item.product.price / 100;
+      }
+    });
+
+    return order;
+  }
+
   async create(user: User, createOrderDto: CreateOrderDto) {
     const products = [];
 
@@ -27,7 +39,7 @@ export class OrderService {
         throw new NotFoundException(`Product ${item.id} not found`);
       }
 
-      const price = product.price / 100;
+      const price = String(product.price).length > 3 ? product.price / 100 : product.price;
 
       totalValue += price * item.quantity;
 
@@ -45,9 +57,7 @@ export class OrderService {
 
     await this.orderRepository.save(order);
 
-    order.totalValue = order.totalValue / 100;
-
-    return order;
+    return this.normalizeOrderPrice(order);
   }
 
   async findAll(userId: string) {
@@ -60,9 +70,7 @@ export class OrderService {
 
     if (!orders.length) throw new NotFoundException();
 
-    orders.forEach(order => order.totalValue = order.totalValue / 100);
-
-    return orders;
+    return orders.map(order => this.normalizeOrderPrice(order));
   }
 
   async findOne(user: User, id: string) {
@@ -76,9 +84,7 @@ export class OrderService {
 
     if (!order) throw new NotFoundException();
 
-    order.totalValue = order.totalValue / 100
-
-    return order;
+    return this.normalizeOrderPrice(order);
   }
 
   async update(user: User, id: string, updateOrderDto: UpdateOrderDto) {
@@ -104,8 +110,6 @@ export class OrderService {
 
       saved.quantity -= item.quantity || 1;
 
-      console.log({ saved, item });
-
       if (saved.quantity < 0) {
         throw new BadRequestException({ message: `Item ${item.id} already received` });
       }
@@ -117,8 +121,6 @@ export class OrderService {
 
     const updatedOrder = await this.orderRepository.findOne(id, { relations: ['items'] });
 
-    updatedOrder.totalValue = updatedOrder.totalValue / 100;
-
-    return updatedOrder;
+    return this.normalizeOrderPrice(updatedOrder);
   }
 }

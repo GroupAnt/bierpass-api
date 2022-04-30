@@ -7,14 +7,18 @@ import { Repository } from 'typeorm';
 import { Order } from './entities/order.entity';
 import { Items } from './entities/items.entity';
 import { Product } from 'src/product/entities/product.entity';
+import { MercadopagoService } from 'src/api/mercadopago/mercadopago.api';
 
 @Injectable()
 export class OrderService {
+  private readonly mercadopagoService: MercadopagoService
   constructor(
     @InjectRepository(Order) private readonly orderRepository: Repository<Order>,
     @InjectRepository(Items) private readonly itemsRepository: Repository<Items>,
-    @InjectRepository(Product) private readonly productRepository: Repository<Product>
-  ) { }
+    @InjectRepository(Product) private readonly productRepository: Repository<Product>,
+  ) {
+    this.mercadopagoService = new MercadopagoService();
+  }
 
   normalizeOrderPrice(order: Order) {
     order.totalValue = order.totalValue / 100;
@@ -57,7 +61,12 @@ export class OrderService {
 
     await this.orderRepository.save(order);
 
-    return this.normalizeOrderPrice(order);
+    const preferences = await this.mercadopagoService.createPayment(user, order);
+
+    return {
+      ...this.normalizeOrderPrice(order),
+      paymentUrl: preferences.init_point,
+    };
   }
 
   async findAll(userId: string) {
@@ -75,7 +84,6 @@ export class OrderService {
 
   async findOne(user: User, id: string) {
     const order = await this.orderRepository.findOne({
-      relations: ['items'],
       where: {
         id,
         user,
@@ -92,8 +100,7 @@ export class OrderService {
       throw new ForbiddenException('You are not allowed to update orders');
     }
 
-    const orderWhere = { where: { id } };
-    const order = await this.orderRepository.findOne(orderWhere);
+    const order = await this.orderRepository.findOne(id);
 
     if (!order) throw new NotFoundException({ message: 'Order not found' });
 

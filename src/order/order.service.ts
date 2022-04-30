@@ -7,14 +7,18 @@ import { Repository } from 'typeorm';
 import { Order } from './entities/order.entity';
 import { Items } from './entities/items.entity';
 import { Product } from 'src/product/entities/product.entity';
+import { MercadopagoService } from 'src/api/mercadopago/mercadopago.api';
 
 @Injectable()
 export class OrderService {
+  private readonly mercadopagoService: MercadopagoService
   constructor(
     @InjectRepository(Order) private readonly orderRepository: Repository<Order>,
     @InjectRepository(Items) private readonly itemsRepository: Repository<Items>,
-    @InjectRepository(Product) private readonly productRepository: Repository<Product>
-  ) { }
+    @InjectRepository(Product) private readonly productRepository: Repository<Product>,
+  ) {
+    this.mercadopagoService = new MercadopagoService();
+  }
 
   async create(user: User, createOrderDto: CreateOrderDto) {
     const products = [];
@@ -46,8 +50,14 @@ export class OrderService {
     await this.orderRepository.save(order);
 
     order.totalValue = order.totalValue / 100;
+    order.items.forEach(item => item.product.price = item.product.price / 100);
 
-    return order;
+    const preferences = await this.mercadopagoService.createPayment(user, order);
+
+    return {
+      ...order,
+      paymentUrl: preferences.init_point,
+    };
   }
 
   async findAll(userId: string) {
@@ -67,7 +77,6 @@ export class OrderService {
 
   async findOne(user: User, id: string) {
     const order = await this.orderRepository.findOne({
-      relations: ['items'],
       where: {
         id,
         user,
@@ -76,9 +85,20 @@ export class OrderService {
 
     if (!order) throw new NotFoundException();
 
-    order.totalValue = order.totalValue / 100
+    const items = await this.itemsRepository.find({
+      relations: ['product'],
+      where: {
+        order: { id },
+      },
+    });
 
-    return order;
+    order.totalValue = order.totalValue / 100;
+    items.forEach(item => item.product.price = item.product.price / 100);
+
+    return {
+      ...order,
+      items,
+    };
   }
 
   async update(user: User, id: string, updateOrderDto: UpdateOrderDto) {
@@ -86,8 +106,7 @@ export class OrderService {
       throw new ForbiddenException('You are not allowed to update orders');
     }
 
-    const orderWhere = { where: { id } };
-    const order = await this.orderRepository.findOne(orderWhere);
+    const order = await this.orderRepository.findOne(id);
 
     if (!order) throw new NotFoundException({ message: 'Order not found' });
 
@@ -104,8 +123,6 @@ export class OrderService {
 
       saved.quantity -= item.quantity || 1;
 
-      console.log({ saved, item });
-
       if (saved.quantity < 0) {
         throw new BadRequestException({ message: `Item ${item.id} already received` });
       }
@@ -118,6 +135,8 @@ export class OrderService {
     const updatedOrder = await this.orderRepository.findOne(id, { relations: ['items'] });
 
     updatedOrder.totalValue = updatedOrder.totalValue / 100;
+
+    updatedOrder.items.forEach(item => item.product.price = item.product.price / 100);
 
     return updatedOrder;
   }

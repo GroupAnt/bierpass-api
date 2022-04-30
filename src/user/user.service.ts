@@ -1,4 +1,4 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import { Injectable, NotFoundException, ForbiddenException } from '@nestjs/common';
 import { CreateUserDto } from './dto/create-user.dto';
 import { UpdateUserDto } from './dto/update-user.dto';
 import { Repository } from 'typeorm';
@@ -20,7 +20,11 @@ export class UserService {
     return this.repository.findOne({ federalTaxId: federalTaxId });
   }
 
-  findAll(): Promise<User[]> {
+  findAll(user: User): Promise<User[]> {
+    if (!user.hasAdmin) {
+      throw new ForbiddenException('You are not allowed to fetch users');
+    }
+
     return this.repository.find();
   }
 

@@ -20,6 +20,18 @@ export class OrderService {
     this.mercadopagoService = new MercadopagoService();
   }
 
+  normalizeOrderPrice(order: Order) {
+    order.totalValue = order.totalValue / 100;
+
+    order.items.forEach(item => {
+      if (item.product?.price) {
+        item.product.price = item.product.price / 100;
+      }
+    });
+
+    return order;
+  }
+
   async create(user: User, createOrderDto: CreateOrderDto) {
     const products = [];
 
@@ -31,7 +43,7 @@ export class OrderService {
         throw new NotFoundException(`Product ${item.id} not found`);
       }
 
-      const price = product.price / 100;
+      const price = String(product.price).length > 3 ? product.price / 100 : product.price;
 
       totalValue += price * item.quantity;
 
@@ -49,13 +61,10 @@ export class OrderService {
 
     await this.orderRepository.save(order);
 
-    order.totalValue = order.totalValue / 100;
-    order.items.forEach(item => item.product.price = item.product.price / 100);
-
     const preferences = await this.mercadopagoService.createPayment(user, order);
 
     return {
-      ...order,
+      ...this.normalizeOrderPrice(order),
       paymentUrl: preferences.init_point,
     };
   }
@@ -70,9 +79,7 @@ export class OrderService {
 
     if (!orders.length) throw new NotFoundException();
 
-    orders.forEach(order => order.totalValue = order.totalValue / 100);
-
-    return orders;
+    return orders.map(order => this.normalizeOrderPrice(order));
   }
 
   async findOne(user: User, id: string) {
@@ -85,20 +92,7 @@ export class OrderService {
 
     if (!order) throw new NotFoundException();
 
-    const items = await this.itemsRepository.find({
-      relations: ['product'],
-      where: {
-        order: { id },
-      },
-    });
-
-    order.totalValue = order.totalValue / 100;
-    items.forEach(item => item.product.price = item.product.price / 100);
-
-    return {
-      ...order,
-      items,
-    };
+    return this.normalizeOrderPrice(order);
   }
 
   async update(user: User, id: string, updateOrderDto: UpdateOrderDto) {
@@ -134,10 +128,6 @@ export class OrderService {
 
     const updatedOrder = await this.orderRepository.findOne(id, { relations: ['items'] });
 
-    updatedOrder.totalValue = updatedOrder.totalValue / 100;
-
-    updatedOrder.items.forEach(item => item.product.price = item.product.price / 100);
-
-    return updatedOrder;
+    return this.normalizeOrderPrice(updatedOrder);
   }
 }

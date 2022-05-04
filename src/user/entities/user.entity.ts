@@ -1,7 +1,5 @@
 import {
-  BaseEntity,
   Entity,
-  PrimaryGeneratedColumn,
   Column,
   OneToMany,
 } from 'typeorm';
@@ -10,9 +8,6 @@ import { CommonBaseEntity } from 'src/common/entities/base.entity';
 
 @Entity()
 export class User extends CommonBaseEntity {
-  @PrimaryGeneratedColumn('uuid')
-  readonly id: string;
-
   @Column({ nullable: false, unique: true })
   federalTaxId: string;
 

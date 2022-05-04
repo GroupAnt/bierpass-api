@@ -7,14 +7,18 @@ import { Repository } from 'typeorm';
 import { Order } from './entities/order.entity';
 import { Items } from './entities/items.entity';
 import { Product } from 'src/product/entities/product.entity';
+import { MercadopagoService } from 'src/api/mercadopago/mercadopago.api';
 
 @Injectable()
 export class OrderService {
+  private readonly mercadopagoService: MercadopagoService
   constructor(
     @InjectRepository(Order) private readonly orderRepository: Repository<Order>,
     @InjectRepository(Items) private readonly itemsRepository: Repository<Items>,
-    @InjectRepository(Product) private readonly productRepository: Repository<Product>
-  ) { }
+    @InjectRepository(Product) private readonly productRepository: Repository<Product>,
+  ) {
+    this.mercadopagoService = new MercadopagoService();
+  }
 
   async create(user: User, createOrderDto: CreateOrderDto) {
     const products = [];
@@ -27,11 +31,9 @@ export class OrderService {
         throw new NotFoundException(`Product ${item.id} not found`);
       }
 
-      const price = product.price / 100;
+      totalValue += product.price * item.quantity;
 
-      totalValue += price * item.quantity;
-
-      const createOrderItem = this.itemsRepository.create({ product, quantity: item.quantity });
+      const createOrderItem = this.itemsRepository.create({ product, quantity: item.quantity, price: product.price });
       const orderItem = await this.itemsRepository.save(createOrderItem);
 
       products.push(orderItem);
@@ -40,14 +42,17 @@ export class OrderService {
     const order = this.orderRepository.create({
       items: products,
       user,
-      totalValue: totalValue * 100
+      totalValue
     });
 
     await this.orderRepository.save(order);
 
-    order.totalValue = order.totalValue / 100;
+    const preferences = await this.mercadopagoService.createPayment(user, order);
 
-    return order;
+    return {
+      ...order,
+      paymentUrl: preferences.sandbox_init_point,
+    };
   }
 
   async findAll(userId: string) {
@@ -60,14 +65,12 @@ export class OrderService {
 
     if (!orders.length) throw new NotFoundException();
 
-    orders.forEach(order => order.totalValue = order.totalValue / 100);
-
     return orders;
   }
 
   async findOne(user: User, id: string) {
     const order = await this.orderRepository.findOne({
-      relations: ['items'],
+      relations: ['items', 'items.product'],
       where: {
         id,
         user,
@@ -76,49 +79,49 @@ export class OrderService {
 
     if (!order) throw new NotFoundException();
 
-    order.totalValue = order.totalValue / 100
-
-    return order;
+    const preferences = await this.mercadopagoService.createPayment(user, order);
+    console.log(JSON.stringify(preferences, null, 2));
+    return {
+      ...order,
+      paymentUrl: preferences.sandbox_init_point,
+    };
   }
 
+  /*
+  ** TODO: Substituir método de consumo de itens para uma tabela de controle.
+  */
   async update(user: User, id: string, updateOrderDto: UpdateOrderDto) {
     if (!user.hasAdmin) {
       throw new ForbiddenException('You are not allowed to update orders');
     }
 
-    const orderWhere = { where: { id } };
-    const order = await this.orderRepository.findOne(orderWhere);
+    const order = await this.orderRepository.findOne(id);
 
     if (!order) throw new NotFoundException({ message: 'Order not found' });
 
-    const itemWhere = { where: { order: { id } }, relations: ['product'] };
-    const items = await this.itemsRepository.find(itemWhere);
-
-    for (const item of updateOrderDto.items) {
-      if (item.quantity <= 0) {
-        throw new BadRequestException({ message: 'Quantity must be greater than 0' });
+    if (updateOrderDto.items) {
+      const itemWhere = { where: { order: { id } }, relations: ['product'] };
+      const items = await this.itemsRepository.find(itemWhere);
+  
+      for (const item of updateOrderDto.items) {
+        if (item.quantity <= 0) {
+          throw new BadRequestException({ message: 'Quantity must be greater than 0' });
+        }
+  
+        const saved = items.find(i => i.product?.id === item.id);
+        if (!saved) throw new NotFoundException({ message: `Item ${item.id} not found` });
+  
+        saved.quantity -= item.quantity || 1;
+  
+        if (saved.quantity < 0) {
+          throw new BadRequestException({ message: `Item ${item.id} already received` });
+        }
+  
+        const createOrderItem = this.itemsRepository.create(saved);
+        await this.itemsRepository.save(createOrderItem);
       }
-
-      const saved = items.find(i => i.product?.id === item.id);
-      if (!saved) throw new NotFoundException({ message: `Item ${item.id} not found` });
-
-      saved.quantity -= item.quantity || 1;
-
-      console.log({ saved, item });
-
-      if (saved.quantity < 0) {
-        throw new BadRequestException({ message: `Item ${item.id} already received` });
-      }
-
-      const createOrderItem = this.itemsRepository.create(saved);
-      
-      await this.itemsRepository.save(createOrderItem);
     }
 
-    const updatedOrder = await this.orderRepository.findOne(id, { relations: ['items'] });
-
-    updatedOrder.totalValue = updatedOrder.totalValue / 100;
-
-    return updatedOrder;
+    return await this.orderRepository.findOne(id, { relations: ['items'] });
   }
 }

@@ -1,16 +1,13 @@
 import { CommonBaseEntity } from 'src/common/entities/base.entity';
-import { Entity, PrimaryGeneratedColumn, Column } from 'typeorm';
+import { Entity, Column } from 'typeorm';
 
 
 @Entity()
 export class Product extends CommonBaseEntity {
-  @PrimaryGeneratedColumn('uuid')
-  readonly id: string;
-
   @Column({ nullable: false, unique: true })
   name: string;
 
-  @Column({ nullable: false })
+  @Column({ default: 0, type: 'real' })
   price: number;
 
   @Column({ nullable: false, default: 0 })

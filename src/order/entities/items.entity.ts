@@ -2,7 +2,6 @@ import {
   Entity,
   Column,
   JoinColumn,
-  PrimaryGeneratedColumn,
   ManyToOne,
 } from 'typeorm';
 import { Product } from '../../product/entities/product.entity';
@@ -11,9 +10,6 @@ import { CommonBaseEntity } from 'src/common/entities/base.entity';
 
 @Entity()
 export class Items extends CommonBaseEntity {
-  @PrimaryGeneratedColumn('uuid')
-  readonly id: string;
-
   @ManyToOne(() => Product, product => product.id)
   @JoinColumn()
   product: Product;
@@ -24,4 +20,7 @@ export class Items extends CommonBaseEntity {
 
   @Column()
   quantity: number;
+
+  @Column({ type: 'real'})
+  price: number;
 }

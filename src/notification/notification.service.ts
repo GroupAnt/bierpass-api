@@ -20,7 +20,7 @@ export class NotificationService {
     const payment = await this.mercadopagoService.getPayment(externalReferenceId);
     const paymentStatus = PaymentStatus[payment.status];
 
-    const preload = await this.orderRepository.preload({ id: payment.orderId, status: paymentStatus as StatusEnumType });
+    const preload = await this.orderRepository.preload({ id: payment.orderId, status: paymentStatus as StatusEnumType, paymentDate: payment.approvedAt });
 
     await this.orderRepository.update(payment.orderId, preload);
 

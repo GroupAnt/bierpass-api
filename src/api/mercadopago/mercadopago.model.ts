@@ -61,7 +61,7 @@ export class MercadopagoModel {
       payer: user,
       items: this.mapItems(),
       back_urls: {
-        success: 'https://webhook.site/06b0ba65-18df-42b6-8ddf-066a5d09a9ee'
+        success: process.env.MERCADOPAGO_SUCCESS_URL,
       }
     }
   }

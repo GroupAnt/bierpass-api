@@ -1,4 +1,4 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import { Injectable, NotFoundException, BadRequestException } from '@nestjs/common';
 import { CreateProductDto } from './dto/create-product.dto';
 import { UpdateProductDto } from './dto/update-product.dto';
 import { InjectRepository } from '@nestjs/typeorm';
@@ -24,10 +24,7 @@ export class ProductService {
     return this.repository.findOne(id);
   }
 
-  async update(
-    id: string,
-    updateProductDto: UpdateProductDto,
-  ): Promise<Product> {
+  async update(id: string, updateProductDto: UpdateProductDto): Promise<Product> {
     const product = await this.repository.preload({ id, ...updateProductDto });
 
     if (!product) throw new NotFoundException(`Produto não encontrado`);
@@ -35,7 +32,23 @@ export class ProductService {
     return this.repository.save(product);
   }
 
-  remove(id: string): Promise<DeleteResult> {
-    return this.repository.delete(id);
+  async remove(id: string): Promise<Product> {
+    const product = await this.repository.findOne(id);
+    
+    if (!product) throw new NotFoundException(`Produto não encontrado`);
+
+    try {
+      await this.repository.delete(id);
+
+      return product;
+    } catch(error) {
+      const violatesForeingKeyCode = '23503';
+
+      if (error?.code === violatesForeingKeyCode) {
+        throw new BadRequestException('Não é possível realizar a remoção');
+      }
+      
+      throw new BadRequestException();
+    }
   }
 }

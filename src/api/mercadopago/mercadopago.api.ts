@@ -1,55 +1,39 @@
 import { User } from "src/user/entities/user.entity";
-import { Order } from "src/order/entities/order.entity";
+import { Order, StatusEnumType } from "src/order/entities/order.entity";
+import { MercadopagoModel } from "./mercadopago.model";
 
 const mercadopago = require('mercadopago');
 
+export enum PaymentStatus {
+  approved = StatusEnumType.PAID,
+  authorized = StatusEnumType.PAID,
+  in_process = StatusEnumType.PENDING,
+  pending = StatusEnumType.PENDING,
+  cancelled = StatusEnumType.CANCELED,
+  charged_back = StatusEnumType.CHARGEBACK,
+  refunded = StatusEnumType.CHARGEBACK,
+  rejected = StatusEnumType.CANCELED,
+}
+
 export class MercadopagoService {
-  public async createPayment(user: User, order: Order): Promise<any> {
-    mercadopago.configure({ access_token: process.env.MERCADOPAGO_ACCESS_TOKEN });
+  constructor() {
+    mercadopago.configurations.setAccessToken(process.env.MERCADOPAGO_ACCESS_TOKEN);
+  }
 
-    const items = order.items.map(item => {
-      return {
-        id: item.product.id,
-        title: item.product.name,
-        quantity: item.quantity,
-        unit_price: item.product.price
-      }
-    });
+  async getPayment(id: string): Promise<any> {
+    const { response } = await mercadopago.payment.get(id);
 
-    const [ areaCode, phoneNumber ] = user.phone.split(" ");
-    const payer = {
-      first_name: user.firstName,
-      last_name: user.lastName,
-      email: user.email,
-      phone: {
-        area_code: areaCode,
-        number: Number(phoneNumber)
-      },
-      address: {
-        zip_code: user.postalCode,
-        street_name: user.streetName,
-        street_number: Number(user.streetNumber),
-        neighborhood: user.neighborhood,
-        city: user.city,
-        federal_unit: 'SC',
-      },
-      identification: {
-        type: 'CPF',
-        number: user.federalTaxId
-      },
-      external_reference: order.id,
-    }
-
-    const paymentModel = {
-      transaction_amount: order.totalValue,
-      payer,
-      items,
-      payment_method_id: 'pix',
-      installments: 1
+    return {
+      status: response.status,
+      orderId: response.external_reference, 
+      approvedAt: response.date_approved
     };
+  }
 
-    const preferences = await mercadopago.preferences.create(paymentModel);
+  async createPayment(user: User, order: Order): Promise<any> {
+    const model = new MercadopagoModel(user, order);
 
+    const preferences = await mercadopago.preferences.create(model.mapToRequest());
     return preferences.response;
   }
 }

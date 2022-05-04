@@ -21,7 +21,7 @@ export class UserService {
   }
 
   findAll(user: User): Promise<User[]> {
-    if (!user.hasAdmin) {
+    if (user && !user.hasAdmin) {
       throw new ForbiddenException('You are not allowed to fetch users');
     }
 

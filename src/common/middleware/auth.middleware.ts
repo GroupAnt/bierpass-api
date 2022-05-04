@@ -2,6 +2,7 @@ import { Request, Response, NextFunction } from 'express';
 import {
   Injectable,
   NestMiddleware,
+  NotFoundException,
   UnauthorizedException,
 } from '@nestjs/common';
 import { UserService } from '../../user/user.service';
@@ -22,7 +23,13 @@ export class AuthMiddleware implements NestMiddleware {
       throw new UnauthorizedException();
     }
 
-    req.user = await this.userService.findOne(token as string);
+    const user = await this.userService.findOne(token as string);
+
+    if (!user) {
+      throw new NotFoundException('Usuário não encontrado')
+    }
+
+    req.user = user;
 
     next();
   }

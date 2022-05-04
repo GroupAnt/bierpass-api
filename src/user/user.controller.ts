@@ -22,9 +22,8 @@ export class UserController {
     return this.userService.findOne(id);
   }
 
-  @Patch()
-  update(@Request() req: any, @Body() updateUserDto: UpdateUserDto) {
-    const user = req.user;
-    return this.userService.update(user.id, updateUserDto);
+  @Patch(':id')
+  update(@Param('id') id: string, @Body() updateUserDto: UpdateUserDto) {
+    return this.userService.update(id, updateUserDto);
   }
 }
